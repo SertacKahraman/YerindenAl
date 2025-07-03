@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ProductCard from '../../components/ProductCard';
 import { db } from '../../config/firebase';
 import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
 
 function timeAgo(dateString: string) {
     const now = new Date();
@@ -26,6 +27,7 @@ export default function SellerProfileScreen() {
     const [seller, setSeller] = useState<any>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
         async function fetchSeller() {
@@ -48,6 +50,60 @@ export default function SellerProfileScreen() {
 
     const joinDate = seller?.joinDate || seller?.createdAt;
 
+    const handleContactSeller = async () => {
+        if (!user) {
+            Alert.alert('Giriş gerekli', 'Sohbet başlatmak için giriş yapmalısınız.');
+            return;
+        }
+        if (!seller || !id) {
+            Alert.alert('Hata', 'Satıcı bilgisi eksik.');
+            return;
+        }
+        // Daha önce bu kullanıcı ve satıcı arasında chat var mı kontrol et
+        const chatsRef = collection(db, 'chats');
+        const q = query(
+            chatsRef,
+            where('users', 'array-contains', user.id)
+        );
+        const querySnapshot = await getDocs(q);
+        let foundChatId = null;
+        querySnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.users.includes(id)) {
+                foundChatId = docSnap.id;
+            }
+        });
+        if (foundChatId) {
+            router.push({
+                pathname: '/chat/[id]',
+                params: {
+                    id: foundChatId,
+                    sellerName: seller?.name,
+                    sellerPhoto: seller?.photoURL,
+                    sellerId: id,
+                }
+            });
+        } else {
+            router.push({ pathname: '/chat/[id]', params: { id: 'new', sellerId: id, sellerName: seller?.name, sellerPhoto: seller?.photoURL } });
+        }
+    };
+
+    if (!id) {
+        return (
+            <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
+                <Text style={{ color: Colors.textSecondary, fontSize: 18 }}>Satıcı bulunamadı.</Text>
+            </SafeAreaView>
+        );
+    }
+
+    if (!seller) {
+        return (
+            <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
+                <Text style={{ color: Colors.textSecondary, fontSize: 18 }}>Satıcı bilgisi yüklenemedi.</Text>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
             <View style={styles.header}>
@@ -55,7 +111,11 @@ export default function SellerProfileScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </Pressable>
                 <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">Satıcı Profili</Text>
-                <Pressable onPress={() => Alert.alert('Sohbet', 'Sohbet özelliği yakında aktif olacak.')} style={styles.chatButton}>
+                <Pressable
+                    onPress={handleContactSeller}
+                    style={[styles.chatButton, (!id) && { opacity: 0.5 }]}
+                    disabled={!id}
+                >
                     <Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.primary} />
                 </Pressable>
             </View>
@@ -65,7 +125,7 @@ export default function SellerProfileScreen() {
                         source={{ uri: seller?.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(seller?.name || 'Satıcı') }}
                         style={styles.avatar}
                     />
-                    <Text style={styles.sellerName}>{seller?.name || 'Satıcı'}</Text>
+                    <Text style={styles.sellerName}>{seller ? `${seller.firstName || ''} ${seller.lastName || ''}`.trim() || seller?.name || 'Satıcı' : 'Satıcı'}</Text>
                     <View style={styles.badgeRow}>
                         <View style={styles.badge}><Ionicons name="star" size={14} color={Colors.primary} /><Text style={styles.badgeText}>Güvenilir Satıcı</Text></View>
                         {seller?.address && <View style={styles.badge}><Ionicons name="location" size={14} color={Colors.primary} /><Text style={styles.badgeText}>{seller.address}</Text></View>}
@@ -158,8 +218,8 @@ const styles = StyleSheet.create({
     },
     badgeRow: {
         flexDirection: 'row',
-        gap: 8,
         marginBottom: 10,
+        gap: 8,
     },
     badge: {
         flexDirection: 'row',

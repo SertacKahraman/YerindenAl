@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Colors } from '../constants/Colors';
 
@@ -7,9 +8,11 @@ interface ProductCardProps {
     image: string;
     location?: string;
     onPress: () => void;
+    isFavorite?: boolean;
+    onToggleFavorite?: () => void;
 }
 
-export default function ProductCard({ title, price, image, location, onPress }: ProductCardProps) {
+export default function ProductCard({ title, price, image, location, onPress, isFavorite, onToggleFavorite }: ProductCardProps) {
     const { width } = useWindowDimensions();
     const isWeb = Platform.OS === 'web';
 
@@ -20,11 +23,24 @@ export default function ProductCard({ title, price, image, location, onPress }: 
             style={[styles.container, { width: cardWidth }]}
             onPress={onPress}
         >
-            <Image
-                source={{ uri: image }}
-                style={styles.image}
-                resizeMode="cover"
-            />
+            <View>
+                <Image
+                    source={{ uri: image }}
+                    style={styles.image}
+                    resizeMode="cover"
+                />
+                {onToggleFavorite && (
+                    <Pressable
+                        style={styles.favoriteButton}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onToggleFavorite();
+                        }}
+                    >
+                        <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={Colors.primary} />
+                    </Pressable>
+                )}
+            </View>
             <View style={styles.content}>
                 <Text style={styles.title} numberOfLines={2}>{title}</Text>
                 <Text style={styles.price}>{price.toLocaleString('tr-TR')} ₺</Text>
@@ -57,6 +73,19 @@ const styles = StyleSheet.create({
         height: 140,
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
+    },
+    favoriteButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        borderRadius: 16,
+        padding: 4,
+        elevation: 2,
+        shadowColor: Colors.black,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
     },
     content: {
         padding: 12,
