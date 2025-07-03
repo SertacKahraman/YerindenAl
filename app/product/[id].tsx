@@ -189,11 +189,57 @@ export default function ProductDetailScreen() {
     }
 
     // Kullanıcı adını maskeleyen yardımcı fonksiyon
-    function maskName(name: string) {
-        if (!name) return '';
-        const parts = name.split(' ');
+    function maskName(name: string, firstName?: string, lastName?: string) {
+        let fullName = name;
+        if (firstName || lastName) {
+            fullName = `${firstName || ''} ${lastName || ''}`.trim();
+        }
+        if (!fullName) return '';
+        const parts = fullName.split(' ');
         return parts.map(p => p[0] + '*'.repeat(Math.max(0, p.length - 1))).join(' ');
     }
+
+    const handleContactSeller = async () => {
+        if (!user) {
+            Alert.alert('Giriş gerekli', 'Sohbet başlatmak için giriş yapmalısınız.');
+            return;
+        }
+        if (!product || !product.seller || !product.seller.id || !product.id) {
+            Alert.alert('Hata', 'Satıcı veya ürün bilgisi eksik.');
+            return;
+        }
+        // Daha önce bu kullanıcı ve satıcı (ve ürün) arasında chat var mı kontrol et
+        const chatsRef = collection(db, 'chats');
+        const q = query(
+            chatsRef,
+            where('users', 'array-contains', user.id)
+        );
+        const querySnapshot = await getDocs(q);
+        let foundChatId = null;
+        querySnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (
+                data.users.includes(product.seller.id) &&
+                (data.productId ? data.productId === product.id : true)
+            ) {
+                foundChatId = docSnap.id;
+            }
+        });
+        if (foundChatId) {
+            router.push({
+                pathname: '/chat/[id]',
+                params: {
+                    id: foundChatId,
+                    sellerName: product.seller.name,
+                    sellerPhoto: product.seller.photoURL,
+                    sellerId: product.seller.id,
+                    productId: product.id,
+                }
+            });
+        } else {
+            router.push({ pathname: '/chat/[id]', params: { id: 'new', sellerId: product.seller.id, productId: product.id, sellerName: product.seller.name, sellerPhoto: product.seller.photoURL } });
+        }
+    };
 
     if (loading) {
         return (
@@ -292,22 +338,30 @@ export default function ProductDetailScreen() {
                     <View style={styles.sellerInfo}>
                         <Ionicons name="person-outline" size={20} color={Colors.textSecondary} />
                         {product.seller && typeof product.seller === 'object' && product.seller.id ? (
-                            <Pressable onPress={() => router.push({ pathname: '/seller/[id]', params: { id: product.seller.id } })}>
-                                <Text style={styles.sellerName}>{product.seller.name}</Text>
+                            <Pressable
+                                onPress={() => {
+                                    if (!product.seller.id) {
+                                        Alert.alert('Hata', 'Satıcı bilgisi eksik.');
+                                        return;
+                                    }
+                                    router.push({ pathname: '/seller/[id]', params: { id: product.seller.id } });
+                                }}
+                            >
+                                <Text style={styles.sellerName}>{`${product.seller.firstName || ''} ${product.seller.lastName || ''}`.trim() || product.seller.name}</Text>
                             </Pressable>
                         ) : (
-                            <Text style={styles.sellerName}>{typeof product.seller === 'string' ? product.seller : product.seller?.name}</Text>
+                            <Text style={styles.sellerName}>{typeof product.seller === 'string' ? product.seller : (product.seller?.firstName || '') + ' ' + (product.seller?.lastName || '')}</Text>
                         )}
                     </View>
 
                     <View style={styles.locationInfo}>
                         <Ionicons name="location-outline" size={20} color={Colors.textSecondary} />
-                        <Text style={styles.locationText}>{product.location}</Text>
+                        <Text style={styles.locationText}>{product.location || 'Konum bilgisi yok'}</Text>
                     </View>
 
                     <View style={styles.descriptionContainer}>
                         <Text style={styles.descriptionTitle}>Ürün Açıklaması</Text>
-                        <Text style={styles.description}>{product.description}</Text>
+                        <Text style={styles.description}>{product.description || 'Açıklama yok.'}</Text>
                     </View>
                     {/* Divider */}
                     <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: 24 }} />
@@ -342,7 +396,7 @@ export default function ProductDetailScreen() {
                                         {/* Kullanıcı adı ve tarih */}
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'flex-start', alignSelf: 'stretch' }}>
                                             <Ionicons name="person-circle-outline" size={22} color={Colors.textSecondary} />
-                                            <Text style={{ marginLeft: 6, fontWeight: 'bold', color: Colors.text }}>{maskName(c.userName)}</Text>
+                                            <Text style={{ marginLeft: 6, fontWeight: 'bold', color: Colors.text }}>{maskName(c.userName, c.firstName, c.lastName)}</Text>
                                             <Text style={{ marginLeft: 8, color: Colors.textSecondary, fontSize: 12 }}>{c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleDateString() : ''}</Text>
                                         </View>
                                         {/* Yorum metni */}
@@ -374,8 +428,9 @@ export default function ProductDetailScreen() {
 
             <View style={styles.footer}>
                 <Pressable
-                    style={styles.contactButton}
-                    onPress={() => {/* İletişim fonksiyonu */ }}
+                    onPress={handleContactSeller}
+                    style={[styles.contactButton, (!product || !product.seller || !product.seller.id || !product.id) && { opacity: 0.5 }]}
+                    disabled={!product || !product.seller || !product.seller.id || !product.id}
                 >
                     <Ionicons name="chatbubble-outline" size={20} color={Colors.primary} />
                     <Text style={styles.contactButtonText}>Satıcı ile İletişime Geç</Text>

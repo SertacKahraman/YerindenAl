@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, getDocs } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc as firestoreDoc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
+import ProductCard from '../components/ProductCard';
 import { db } from '../config/firebase';
 import { Colors } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +28,7 @@ export default function HomeScreen() {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
     // Türkiye'deki iller
     const cities = [
@@ -79,6 +81,21 @@ export default function HomeScreen() {
         fetchProducts();
     }, []);
 
+    // Kullanıcı favorilerini çek
+    useEffect(() => {
+        async function fetchFavorites() {
+            if (!user) {
+                setFavoriteIds([]);
+                return;
+            }
+            const userRef = firestoreDoc(db, 'users', user.id);
+            const userSnap = await getDoc(userRef);
+            const favs = userSnap.exists() && userSnap.data().favorites ? userSnap.data().favorites : [];
+            setFavoriteIds(favs);
+        }
+        fetchFavorites();
+    }, [user]);
+
     // Arama geçmişini kaydet
     const saveSearchHistory = (query: string) => {
         if (query.trim()) {
@@ -123,6 +140,26 @@ export default function HomeScreen() {
     const handleLocationSelect = (city: string) => {
         setSelectedLocation(city);
         setShowLocationModal(false);
+    };
+
+    // Favori ekle/çıkar fonksiyonu
+    const handleToggleFavorite = async (productId: string) => {
+        if (!user) {
+            alert('Favorilere eklemek için giriş yapmalısınız.');
+            return;
+        }
+        const userRef = firestoreDoc(db, 'users', user.id);
+        try {
+            if (favoriteIds.includes(productId)) {
+                await updateDoc(userRef, { favorites: arrayRemove(productId) });
+                setFavoriteIds(favoriteIds.filter(id => id !== productId));
+            } else {
+                await updateDoc(userRef, { favorites: arrayUnion(productId) });
+                setFavoriteIds([...favoriteIds, productId]);
+            }
+        } catch (e) {
+            alert('Favori işlemi sırasında bir hata oluştu.');
+        }
     };
 
     return (
@@ -177,21 +214,16 @@ export default function HomeScreen() {
                                 <ActivityIndicator size="large" color={Colors.primary} />
                             </View>
                         ) : getFilteredProducts().map((product) => (
-                            <Pressable
+                            <ProductCard
                                 key={product.id}
-                                style={styles.productCard}
+                                title={product.title}
+                                price={parseFloat(product.price)}
+                                image={product.image}
+                                location={product.location}
                                 onPress={() => handleProductPress(product.id)}
-                            >
-                                <Image
-                                    source={{ uri: product.image }}
-                                    style={styles.productImage}
-                                />
-                                <View style={styles.productInfo}>
-                                    <Text style={styles.productTitle}>{product.title}</Text>
-                                    <Text style={styles.productPrice}>{product.price} TL</Text>
-                                    <Text style={styles.productLocation}>{product.location}</Text>
-                                </View>
-                            </Pressable>
+                                isFavorite={favoriteIds.includes(product.id)}
+                                onToggleFavorite={() => handleToggleFavorite(product.id)}
+                            />
                         ))}
                     </View>
                 </ScrollView>

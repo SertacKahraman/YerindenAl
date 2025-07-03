@@ -6,6 +6,8 @@ import { auth, db } from '../config/firebase';
 interface User {
     id: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
     name?: string;
     phone?: string;
     location?: string;
@@ -17,7 +19,7 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, name: string, phone?: string) => Promise<void>;
+    signUp: (email: string, password: string, firstName: string, lastName: string, phone?: string) => Promise<void>;
     signOut: () => Promise<void>;
     updateProfile: (data: Partial<User>) => Promise<void>;
 }
@@ -64,17 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const signUp = async (email: string, password: string, name: string, phone?: string) => {
+    const signUp = async (email: string, password: string, firstName: string, lastName: string, phone?: string) => {
         setLoading(true);
         try {
             const cred = await createUserWithEmailAndPassword(auth, email, password);
             if (auth.currentUser) {
-                await fbUpdateProfile(auth.currentUser, { displayName: name });
+                await fbUpdateProfile(auth.currentUser, { displayName: `${firstName} ${lastName}` });
                 // Firestore'a kullanıcıyı ekle
                 await setDoc(doc(db, 'users', auth.currentUser.uid), {
                     id: auth.currentUser.uid,
                     email: auth.currentUser.email,
-                    name: name,
+                    firstName,
+                    lastName,
                     phone: phone || '',
                     joinDate: new Date().toISOString()
                 });
