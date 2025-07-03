@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, deleteField, doc, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
 
 const imageMap = {
@@ -271,6 +271,13 @@ async function standardizeUsers() {
     for (const userDoc of userSnapshot.docs) {
         const data = userDoc.data();
         const updates = {};
+        // name'i firstName ve lastName olarak ayır
+        if (data.name) {
+            const parts = data.name.trim().split(' ');
+            updates.firstName = parts[0];
+            updates.lastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+            updates.name = deleteField();
+        }
         if (!data.photoURL) updates.photoURL = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(data.name || 'Kullanıcı');
         if (!data.createdAt) updates.createdAt = new Date().toISOString();
         if (!data.address) updates.address = 'Bilinmiyor';

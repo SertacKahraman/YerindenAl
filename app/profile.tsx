@@ -18,8 +18,8 @@ export default function ProfileScreen() {
     const [showFavorites, setShowFavorites] = useState(false);
     const [favoriteProducts, setFavoriteProducts] = useState<any[]>([]);
     const [loadingFavorites, setLoadingFavorites] = useState(false);
-
-
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
 
     // Kullanıcı yoksa yönlendirme (push ile)
     useEffect(() => {
@@ -94,6 +94,7 @@ export default function ProfileScreen() {
         { icon: 'create-outline', text: 'Profili Düzenle', action: () => { } },
         { icon: 'list-outline', text: 'Siparişlerim', action: () => { } },
         { icon: 'heart-outline', text: 'Favorilerim', action: () => router.push('./profile/favorites') },
+        { icon: 'chatbubble-ellipses-outline', text: 'Mesajlar', action: () => router.push('/messages') },
         { icon: 'settings-outline', text: 'Ayarlar', action: () => { } },
         { icon: 'help-circle-outline', text: 'Yardım', action: () => { } }
     ];
@@ -122,7 +123,7 @@ export default function ProfileScreen() {
                             <Ionicons name="camera" size={24} color={Colors.primary} />
                         </View>
                     </Pressable>
-                    <Text style={styles.profileName}>{user?.name || 'Kullanıcı'}</Text>
+                    <Text style={styles.profileName}>{user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''}</Text>
                     <Text style={styles.profileEmail}>{user?.email}</Text>
                 </View>
 

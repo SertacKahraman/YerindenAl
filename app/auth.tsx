@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import React, { useRef, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -13,6 +14,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { db } from '../config/firebase';
 import { Colors } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +29,10 @@ export default function AuthScreen() {
     const isWeb = Platform.OS === 'web';
     const router = useRouter();
     const { signIn, signUp } = useAuth();
+    const [errorMessage, setErrorMessage] = useState('');
+    const phoneInputRef = useRef<TextInput>(null);
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
 
     const validateEmail = (email: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,9 +43,33 @@ export default function AuthScreen() {
         return password.length >= 6;
     };
 
+    // Telefon numarasını (5xx) xxx xx xx formatında gösteren fonksiyon
+    function formatPhoneInput(raw: string) {
+        const cleaned = raw.replace(/[^0-9]/g, '').slice(0, 10);
+        const p1 = cleaned.slice(0, 3);
+        const p2 = cleaned.slice(3, 6);
+        const p3 = cleaned.slice(6, 8);
+        const p4 = cleaned.slice(8, 10);
+        let formatted = '';
+        if (p1) formatted += `(${p1}`;
+        if (p1.length === 3) formatted += ')';
+        if (p2) formatted += ` ${p2}`;
+        if (p3) formatted += ` ${p3}`;
+        if (p4) formatted += ` ${p4}`;
+        return formatted;
+    }
+
+    // Türkçe karakterler için her kelimenin ilk harfi büyük, diğerleri küçük yapar ve boşlukları kaldırır
+    const capitalizeNoSpaceTr = (text: string) =>
+        text
+            .replace(/\s+/g, '') // tüm boşlukları kaldır
+            .replace(/^(.)/, (m) => m.toLocaleUpperCase('tr-TR')) // ilk harfi büyük yap
+            .replace(/(.)(.*)/, (m, p1, p2) => p1 + p2.toLocaleLowerCase('tr-TR')); // geri kalanı küçük yap
+
     const handleSubmit = async () => {
         try {
             setLoading(true);
+            setErrorMessage('');
 
             // Form validasyonu
             if (!email || !password) {
@@ -57,8 +87,15 @@ export default function AuthScreen() {
                 return;
             }
 
-            if (!isLogin && !name) {
-                Alert.alert('Hata', 'Lütfen adınızı girin.');
+            if (!isLogin && !firstName) {
+                setErrorMessage('Lütfen adınızı girin.');
+                setLoading(false);
+                return;
+            }
+
+            if (!isLogin && !lastName) {
+                setErrorMessage('Lütfen soyadınızı girin.');
+                setLoading(false);
                 return;
             }
 
@@ -67,13 +104,34 @@ export default function AuthScreen() {
                 return;
             }
 
+            if (!isLogin) {
+                // E-posta veya telefon zaten kayıtlı mı kontrol et
+                const usersRef = collection(db, 'users');
+                const qEmail = query(usersRef, where('email', '==', email));
+                const qPhone = query(usersRef, where('phone', '==', phone));
+                const [emailSnap, phoneSnap] = await Promise.all([
+                    getDocs(qEmail),
+                    getDocs(qPhone)
+                ]);
+                if (!emailSnap.empty) {
+                    setErrorMessage('Bu e-posta ile kayıtlı bir kullanıcı var.');
+                    setLoading(false);
+                    return;
+                }
+                if (!phoneSnap.empty) {
+                    setErrorMessage('Bu telefon numarası ile kayıtlı bir kullanıcı var.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             if (isLogin) {
                 await signIn(email, password);
                 Alert.alert('Başarılı', 'Giriş başarılı!');
                 router.replace('/');
             } else {
-                console.log('signUp fonksiyonu çağrıldı', email, name, phone);
-                await signUp(email, password, name, phone);
+                console.log('signUp fonksiyonu çağrıldı', email, firstName, lastName, phone);
+                await signUp(email, password, firstName, lastName, phone);
                 Alert.alert('Başarılı', 'Kayıt başarılı!');
                 router.replace('/');
             }
@@ -81,7 +139,7 @@ export default function AuthScreen() {
             console.error('Kayıt Hatası:', error);
             let msg = 'Bir hata oluştu. Lütfen tekrar deneyin.';
             if (error && error.message) msg = error.message;
-            Alert.alert('Hata', msg);
+            setErrorMessage(msg);
         } finally {
             setLoading(false);
         }
@@ -104,19 +162,52 @@ export default function AuthScreen() {
                         <>
                             <TextInput
                                 style={styles.input}
-                                placeholder="Ad Soyad"
+                                placeholder="Ad"
                                 placeholderTextColor={Colors.textSecondary}
-                                value={name}
-                                onChangeText={setName}
-                                autoCapitalize="words"
+                                value={capitalizeNoSpaceTr(firstName)}
+                                onChangeText={text => setFirstName(capitalizeNoSpaceTr(text))}
+                                autoCapitalize="none"
                             />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Telefon Numarası"
+                                placeholder="Soyad"
                                 placeholderTextColor={Colors.textSecondary}
-                                value={phone}
-                                onChangeText={setPhone}
+                                value={capitalizeNoSpaceTr(lastName)}
+                                onChangeText={text => setLastName(capitalizeNoSpaceTr(text))}
+                                autoCapitalize="none"
+                            />
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        borderBottomWidth: 1,
+                                        borderBottomColor: '#d1d5db',
+                                        borderRadius: 0,
+                                        marginBottom: 16,
+                                        letterSpacing: 2,
+                                        fontWeight: '400',
+                                        fontFamily: undefined,
+                                        fontSize: 18,
+                                        color: '#111',
+                                        backgroundColor: 'transparent',
+                                    },
+                                ]}
+                                placeholder="(5__) ___ __ __"
+                                placeholderTextColor="#b0b0b0"
+                                value={formatPhoneInput(phone)}
+                                onChangeText={text => {
+                                    let cleaned = text.replace(/[^0-9]/g, '');
+                                    if (cleaned.startsWith('90')) cleaned = cleaned.slice(2);
+                                    if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+                                    setPhone(cleaned.slice(0, 10));
+                                }}
+                                onKeyPress={e => {
+                                    if (e.nativeEvent.key === 'Backspace') {
+                                        setPhone(prev => prev.slice(0, -1));
+                                    }
+                                }}
                                 keyboardType="phone-pad"
+                                maxLength={15}
                             />
                         </>
                     )}
@@ -139,6 +230,13 @@ export default function AuthScreen() {
                         onChangeText={setPassword}
                         secureTextEntry
                     />
+
+                    {errorMessage ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffeaea', borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#ffb3b3', justifyContent: 'center' }}>
+                            <Ionicons name="alert-circle" size={22} color="#d32f2f" style={{ marginRight: 8 }} />
+                            <Text style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: 15 }}>{errorMessage}</Text>
+                        </View>
+                    ) : null}
 
                     <Pressable
                         style={({ pressed }) => [
