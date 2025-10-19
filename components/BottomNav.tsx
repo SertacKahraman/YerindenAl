@@ -16,7 +16,7 @@ export default function BottomNav() {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <View style={[styles.container, { height: 70 + bottom, paddingBottom: 10 + bottom }]}>
+        <View style={[styles.container, { height: 55 + bottom }]}>
             <View style={styles.navContent}>
                 <Pressable
                     style={styles.navItem}
@@ -35,7 +35,7 @@ export default function BottomNav() {
                 <Pressable
                     style={styles.addButton}
                     onPress={() => {
-                        // İlan verme sayfasına yönlendirme
+                        router.push('/create-listing');
                     }}
                 >
                     <View style={styles.addButtonInner}>
@@ -72,11 +72,14 @@ export default function BottomNav() {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: Colors.white,
-        position: 'relative',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: -2,
+            height: 0,
         },
         shadowOpacity: 0.05,
         shadowRadius: 4,
@@ -88,13 +91,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100%',
+        flex: 1,
         paddingHorizontal: 20,
     },
     navItem: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 8,
+        paddingVertical: 6,
     },
     navText: {
         fontSize: 12,

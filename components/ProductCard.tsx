@@ -16,7 +16,8 @@ export default function ProductCard({ title, price, image, location, onPress, is
     const { width } = useWindowDimensions();
     const isWeb = Platform.OS === 'web';
 
-    const cardWidth = isWeb ? (width > 1200 ? 320 : width / 2.3 - 18) : width / 1.6 - 18;
+    // FlatList için optimize edilmiş genişlik hesaplama
+    const cardWidth = isWeb ? (width > 1200 ? 340 : width / 2.2 - 16) : width / 2.05 - 12;
 
     return (
         <Pressable

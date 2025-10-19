@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 export const firebaseConfig = {
     apiKey: "AIzaSyA0G1Z5vnm5w8VyjTolrzksN8VXjWbJn4o",
@@ -13,5 +14,17 @@ export const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+
+// Platform-specific auth initialization
+let auth;
+if (Platform.OS === 'web') {
+    // Web platform - use default auth (no persistence needed)
+    auth = getAuth(app);
+} else {
+    // React Native platform - use initializeAuth without persistence for now
+    // This avoids the getReactNativePersistence import issue
+    auth = initializeAuth(app);
+}
+
+export { auth };
 export const db = getFirestore(app); 

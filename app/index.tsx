@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { arrayRemove, arrayUnion, collection, doc as firestoreDoc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomNav from '../components/BottomNav';
 import ProductCard from '../components/ProductCard';
@@ -163,7 +163,9 @@ export default function HomeScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <>
+            <View style={styles.container}>
+                <SafeAreaView style={styles.safeArea}>
             <View style={[styles.content, isWeb && { maxWidth: 1200, width: '100%', marginHorizontal: 'auto' }]}>
                 <View style={styles.header}>
                     <View style={styles.headerTop}>
@@ -207,26 +209,31 @@ export default function HomeScreen() {
                     </Text>
                 </View>
 
-                <ScrollView style={styles.productList}>
-                    <View style={styles.productsGrid}>
-                        {loading ? (
+                <FlatList
+                    data={loading ? [] : getFilteredProducts()}
+                    numColumns={2}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={styles.productList}
+                    columnWrapperStyle={styles.row}
+                    renderItem={({ item }) => (
+                        <ProductCard
+                            title={item.title}
+                            price={parseFloat(item.price)}
+                            image={item.image}
+                            location={item.location}
+                            onPress={() => handleProductPress(item.id)}
+                            isFavorite={favoriteIds.includes(item.id)}
+                            onToggleFavorite={() => handleToggleFavorite(item.id)}
+                        />
+                    )}
+                    ListEmptyComponent={
+                        loading ? (
                             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
                                 <ActivityIndicator size="large" color={Colors.primary} />
                             </View>
-                        ) : getFilteredProducts().map((product) => (
-                            <ProductCard
-                                key={product.id}
-                                title={product.title}
-                                price={parseFloat(product.price)}
-                                image={product.image}
-                                location={product.location}
-                                onPress={() => handleProductPress(product.id)}
-                                isFavorite={favoriteIds.includes(product.id)}
-                                onToggleFavorite={() => handleToggleFavorite(product.id)}
-                            />
-                        ))}
-                    </View>
-                </ScrollView>
+                        ) : null
+                    }
+                />
             </View>
 
             <Modal
@@ -265,19 +272,26 @@ export default function HomeScreen() {
                     </View>
                 </View>
             </Modal>
+                </SafeAreaView>
+            </View>
             <BottomNav />
-        </SafeAreaView>
+        </>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.background
+
+    },
+    safeArea: {
+        flex: 1,
     },
     content: {
         flex: 1,
         padding: 16,
+        paddingBottom: 50,
     },
     header: {
         marginBottom: 24,
@@ -345,28 +359,12 @@ const styles = StyleSheet.create({
         marginHorizontal: 8,
     },
     productList: {
-        paddingBottom: 16,
+        flexGrow: 1,
+        padding: 8,
+        alignItems: 'center'
     },
-    productsGrid: {
-        padding: 10,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-    },
-    productCard: {
-        width: '48%',
-        backgroundColor: Colors.white,
-        borderRadius: 12,
-        marginBottom: 16,
-        overflow: 'hidden',
-        shadowColor: Colors.black,
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
+    row: {
+        justifyContent: 'flex-start',
     },
     productImage: {
         height: 120,
