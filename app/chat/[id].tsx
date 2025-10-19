@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, FlatList, Image, Linking, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { db } from '../../config/firebase';
 import { Colors } from '../../constants/Colors';
@@ -531,15 +531,19 @@ export default function ChatScreen() {
                 </View>
             </View>
             {/* İçerik (mesajlar ve input) */}
-            <View style={{
-                flex: 1,
-                backgroundColor: Colors.background,
-                borderTopLeftRadius: 48,
-                borderTopRightRadius: 48,
-                marginTop: -40,
-                zIndex: 2,
-                overflow: 'visible',
-            }}>
+            <KeyboardAvoidingView
+                style={{
+                    flex: 1,
+                    backgroundColor: Colors.background,
+                    borderTopLeftRadius: 48,
+                    borderTopRightRadius: 48,
+                    marginTop: -40,
+                    zIndex: 2,
+                    overflow: 'visible',
+                }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+            >
                 {/* Mesajlar ve input barın üstünde ürün kartı */}
                 {product && (
                     <View style={{
@@ -699,87 +703,92 @@ export default function ChatScreen() {
                 />
                 {/* Input bar */}
                 <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    backgroundColor: 'transparent',
-                    borderTopWidth: 0,
-                    borderBottomLeftRadius: 32,
-                    borderBottomRightRadius: 32,
-                    position: 'relative',
-                    minHeight: 68,
-                    paddingBottom: 24 + insets.bottom,
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                    paddingBottom: insets.bottom,
+                    backgroundColor: Colors.white,
+                    borderTopWidth: 1,
+                    borderTopColor: Colors.border,
                 }}>
                     <View style={{
-                        flex: 1,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        backgroundColor: Colors.background,
-                        borderRadius: 32,
-                        paddingHorizontal: 18,
-                        paddingVertical: 8,
-                        shadowColor: '#000',
-                        shadowOpacity: 0.08,
-                        shadowRadius: 8,
-                        elevation: 2,
-                        borderWidth: 2,
-                        borderColor: Colors.border,
-                        minHeight: 48,
+                        gap: 10,
                     }}>
-                        <TextInput
-                            style={{
-                                flex: 1,
-                                fontSize: 16,
-                                color: Colors.text,
-                                backgroundColor: 'transparent',
-                                borderWidth: 0,
-                                paddingVertical: 0,
-                                paddingHorizontal: 0,
-                                paddingRight: 56,
-                                height: 48,
-                                lineHeight: 48,
-                            }}
-                            value={input}
-                            onChangeText={setInput}
-                            placeholder="Mesaj yaz..."
-                            placeholderTextColor={Colors.textSecondary}
-                            multiline={false}
-                            blurOnSubmit={false}
-                            onKeyPress={(e) => {
-                                if (e.nativeEvent.key === 'Enter') {
-                                    e.preventDefault?.();
-                                    handleSend();
-                                }
-                            }}
-                        />
-                        <Pressable onPress={handleEmojiPress} style={{ marginHorizontal: 6 }}>
-                            <Ionicons name="happy-outline" size={22} color={Colors.textSecondary} />
-                        </Pressable>
-                    </View>
-                    <TouchableOpacity
-                        onPress={handleSend}
-                        style={{
-                            backgroundColor: Colors.primary,
-                            borderRadius: 24,
-                            width: 48,
-                            height: 48,
-                            justifyContent: 'center',
+                        <View style={{
+                            flex: 1,
+                            flexDirection: 'row',
                             alignItems: 'center',
-                            marginLeft: 6,
-                            borderWidth: 2,
-                            borderColor: Colors.primary,
-                        }}
-                        disabled={sending || !input.trim()}
-                    >
-                        {sending ? (
-                            <ActivityIndicator size={20} color={Colors.white} />
-                        ) : (
-                            <Ionicons name="send" size={22} color={Colors.white} />
-                        )}
-                    </TouchableOpacity>
+                            backgroundColor: Colors.surface,
+                            borderRadius: 24,
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderWidth: 1,
+                            borderColor: Colors.border,
+                        }}>
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    fontSize: 15,
+                                    color: Colors.text,
+                                    paddingVertical: 0,
+                                    minHeight: 20,
+                                    maxHeight: 100,
+                                    textAlign: 'left',
+                                }}
+                                value={input}
+                                onChangeText={setInput}
+                                placeholder="Mesaj yaz..."
+                                placeholderTextColor={Colors.textSecondary}
+                                multiline
+                                blurOnSubmit={false}
+                                onKeyPress={(e) => {
+                                    if (e.nativeEvent.key === 'Enter') {
+                                        e.preventDefault?.();
+                                        handleSend();
+                                    }
+                                }}
+                            />
+                            <Pressable 
+                                onPress={handleEmojiPress} 
+                                style={{ 
+                                    padding: 6,
+                                    marginLeft: 4,
+                                }}
+                            >
+                                <Ionicons name="happy-outline" size={22} color={Colors.textSecondary} />
+                            </Pressable>
+                        </View>
+                        <TouchableOpacity
+                            onPress={handleSend}
+                            style={{
+                                backgroundColor: input.trim() ? Colors.primary : Colors.border,
+                                borderRadius: 24,
+                                width: 48,
+                                height: 48,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                shadowColor: input.trim() ? Colors.primary : 'transparent',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 4,
+                                elevation: input.trim() ? 4 : 0,
+                            }}
+                            disabled={sending || !input.trim()}
+                        >
+                            {sending ? (
+                                <ActivityIndicator size={20} color={Colors.white} />
+                            ) : (
+                                <Ionicons 
+                                    name="send" 
+                                    size={20} 
+                                    color={input.trim() ? Colors.white : Colors.textSecondary} 
+                                />
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </View>
     );
 }

@@ -204,6 +204,13 @@ export default function ProductDetailScreen() {
             Alert.alert('Giriş gerekli', 'Sohbet başlatmak için giriş yapmalısınız.');
             return;
         }
+        
+        // Kendi ilanına mesaj atmasını engelle
+        if (isOwnListing) {
+            Alert.alert('Uyarı', 'Kendi ilanınıza mesaj atamazsınız.');
+            return;
+        }
+        
         if (!product || !product.seller || !product.seller.id || !product.id) {
             Alert.alert('Hata', 'Satıcı veya ürün bilgisi eksik.');
             return;
@@ -265,6 +272,10 @@ export default function ProductDetailScreen() {
     const images = product.images && Array.isArray(product.images) && product.images.length > 0
         ? product.images
         : [product.image];
+
+    // Kullanıcının kendi ilanı mı kontrol et
+    const isOwnListing = user && product.seller && 
+        (typeof product.seller === 'object' ? product.seller.id === user.id : false);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -359,6 +370,89 @@ export default function ProductDetailScreen() {
                         <Text style={styles.locationText}>{product.location || 'Konum bilgisi yok'}</Text>
                     </View>
 
+                    {/* Ürün Özellikleri Bölümü */}
+                    <View style={styles.specificationsContainer}>
+                        <Text style={styles.specificationsTitle}>Ürün Özellikleri</Text>
+                        
+                        {/* Kategori Bilgileri */}
+                        {product.mainCategory && (
+                            <View style={styles.specRow}>
+                                <Ionicons name="pricetag-outline" size={18} color={Colors.textSecondary} />
+                                <Text style={styles.specLabel}>Kategori:</Text>
+                                <Text style={styles.specValue}>
+                                    {product.breed || product.type || product.subCategory || product.mainCategory}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Hayvan Özellikleri */}
+                        {product.mainCategory === 'hayvancilik' && (
+                            <>
+                                {product.gender && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="male-female-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Cinsiyet:</Text>
+                                        <Text style={styles.specValue}>{product.gender === 'male' ? 'Erkek' : product.gender === 'female' ? 'Dişi' : 'Belirtilmemiş'}</Text>
+                                    </View>
+                                )}
+                                {product.age && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="calendar-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Yaş:</Text>
+                                        <Text style={styles.specValue}>{product.age} ay</Text>
+                                    </View>
+                                )}
+                                {product.weight && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="speedometer-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Ağırlık:</Text>
+                                        <Text style={styles.specValue}>{product.weight} kg</Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
+
+                        {/* Tarım/Gıda Özellikleri */}
+                        {(product.mainCategory === 'tarim' || product.mainCategory === 'hayvansal' || product.mainCategory === 'dogal') && (
+                            <>
+                                {product.organicCertified !== undefined && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="leaf-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Organik Sertifika:</Text>
+                                        <Text style={[styles.specValue, { color: product.organicCertified ? Colors.primary : Colors.textSecondary }]}>
+                                            {product.organicCertified ? '✓ Var' : 'Yok'}
+                                        </Text>
+                                    </View>
+                                )}
+                                {product.harvestDate && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="time-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Hasat Tarihi:</Text>
+                                        <Text style={styles.specValue}>{product.harvestDate}</Text>
+                                    </View>
+                                )}
+                                {product.storageCondition && (
+                                    <View style={styles.specRow}>
+                                        <Ionicons name="cube-outline" size={18} color={Colors.textSecondary} />
+                                        <Text style={styles.specLabel}>Saklama Koşulu:</Text>
+                                        <Text style={styles.specValue}>{product.storageCondition}</Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
+
+                        {/* Toplu Satış */}
+                        {product.bulkAvailable !== undefined && (
+                            <View style={styles.specRow}>
+                                <Ionicons name="layers-outline" size={18} color={Colors.textSecondary} />
+                                <Text style={styles.specLabel}>Toplu Satış:</Text>
+                                <Text style={[styles.specValue, { color: product.bulkAvailable ? Colors.primary : Colors.textSecondary }]}>
+                                    {product.bulkAvailable ? '✓ Mevcut' : 'Mevcut Değil'}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
                     <View style={styles.descriptionContainer}>
                         <Text style={styles.descriptionTitle}>Ürün Açıklaması</Text>
                         <Text style={styles.description}>{product.description || 'Açıklama yok.'}</Text>
@@ -427,14 +521,23 @@ export default function ProductDetailScreen() {
             </ScrollView>
 
             <View style={styles.footer}>
-                <Pressable
-                    onPress={handleContactSeller}
-                    style={[styles.contactButton, (!product || !product.seller || !product.seller.id || !product.id) && { opacity: 0.5 }]}
-                    disabled={!product || !product.seller || !product.seller.id || !product.id}
-                >
-                    <Ionicons name="chatbubble-outline" size={20} color={Colors.primary} />
-                    <Text style={styles.contactButtonText}>Satıcı ile İletişime Geç</Text>
-                </Pressable>
+                {isOwnListing ? (
+                    // Kendi ilanı ise farklı buton göster
+                    <View style={styles.ownListingContainer}>
+                        <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />
+                        <Text style={styles.ownListingText}>Bu sizin ilanınız</Text>
+                    </View>
+                ) : (
+                    // Başkasının ilanı ise mesaj butonu göster
+                    <Pressable
+                        onPress={handleContactSeller}
+                        style={[styles.contactButton, (!product || !product.seller || !product.seller.id || !product.id) && { opacity: 0.5 }]}
+                        disabled={!product || !product.seller || !product.seller.id || !product.id}
+                    >
+                        <Ionicons name="chatbubble-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.contactButtonText}>Satıcı ile İletişime Geç</Text>
+                    </Pressable>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -559,6 +662,22 @@ const styles = StyleSheet.create({
         borderTopColor: Colors.border,
         backgroundColor: Colors.background,
     },
+    ownListingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primary + '10',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.primary,
+    },
+    ownListingText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.primary,
+        marginLeft: 8,
+    },
     contactButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -584,5 +703,36 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 16,
         color: Colors.textSecondary,
+    },
+    specificationsContainer: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
+        marginBottom: 16,
+    },
+    specificationsTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.text,
+        marginBottom: 12,
+    },
+    specRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        gap: 8,
+    },
+    specLabel: {
+        fontSize: 15,
+        color: Colors.textSecondary,
+        fontWeight: '500',
+        marginLeft: 4,
+    },
+    specValue: {
+        fontSize: 15,
+        color: Colors.text,
+        fontWeight: '600',
+        flex: 1,
     },
 }); 

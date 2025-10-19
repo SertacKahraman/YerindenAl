@@ -24,7 +24,7 @@ export default function HomeScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+    const [priceRange, setPriceRange] = useState({ min: 0, max: Infinity }); // Unlimited max price
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -113,16 +113,33 @@ export default function HomeScreen() {
 
     // Filtrelenmiş ürünler
     const getFilteredProducts = () => {
-        return products.filter(product => {
+        const filtered = products.filter(product => {
             const matchesSearch = product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 product.description?.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesCategory = !selectedCategory || selectedCategory === 'Tüm Kategoriler' ||
                 product.category === selectedCategory;
-            const matchesPrice = parseFloat(product.price) >= priceRange.min && parseFloat(product.price) <= priceRange.max;
-            const matchesLocation = !selectedLocation || selectedLocation === 'Tüm Türkiye' ||
-                product.location === selectedLocation;
+            const productPrice = parseFloat(product.price);
+            const matchesPrice = productPrice >= priceRange.min && productPrice <= priceRange.max;
+            
+            // Improved location matching with trimming and normalization
+            const productLocation = product.location?.trim() || '';
+            const filterLocation = selectedLocation?.trim() || '';
+            const matchesLocation = !selectedLocation || 
+                                  selectedLocation === 'Tüm Türkiye' ||
+                                  productLocation === filterLocation;
+            
             return matchesSearch && matchesCategory && matchesPrice && matchesLocation;
         });
+        
+        // Debug: Log filter results
+        console.log('Homepage Filter:', {
+            totalProducts: products.length,
+            filteredProducts: filtered.length,
+            priceRange: priceRange,
+            selectedLocation: selectedLocation
+        });
+        
+        return filtered;
     };
 
     // Arama sayfasına yönlendir
@@ -206,6 +223,7 @@ export default function HomeScreen() {
                     </View>
                     <Text style={styles.subtitle}>
                         {selectedLocation === 'Tüm Türkiye' ? 'Tüm Türkiye\'deki ilanlar' : `${selectedLocation} ilindeki ilanlar`}
+                        {selectedLocation && selectedLocation !== 'Tüm Türkiye' && ` (${getFilteredProducts().length})`}
                     </Text>
                 </View>
 

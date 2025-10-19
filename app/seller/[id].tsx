@@ -59,6 +59,11 @@ export default function SellerProfileScreen() {
             Alert.alert('Hata', 'Satıcı bilgisi eksik.');
             return;
         }
+        // Kendi profiline mesaj göndermesini engelle
+        if (user.id === id) {
+            Alert.alert('Uyarı', 'Kendinize mesaj gönderemezsiniz.');
+            return;
+        }
         // Daha önce bu kullanıcı ve satıcı arasında chat var mı kontrol et
         const chatsRef = collection(db, 'chats');
         const q = query(
