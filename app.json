@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "YerindenAl",
+    "slug": "YerindenAl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/yerindenai-logo.png",
+    "scheme": "YerindenAl",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "İlanınızın konumunu belirlemek için konum bilgilerinize ihtiyaç duyuyoruz."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/yerindenai-logo.png",
+        "backgroundColor": "#0092D1"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.anonymous.YerindenAl"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/yerindenai-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "İlanınızın konumunu belirlemek için konum bilgilerinize ihtiyaç duyuyoruz."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/yerindenai-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0092D1"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "splash": {
+      "image": "./assets/images/yerindenai-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0092D1"
+    }
+  }
+}
