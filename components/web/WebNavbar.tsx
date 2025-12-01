@@ -4,13 +4,11 @@ import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
 
 export default function WebNavbar() {
     const router = useRouter();
     const { query } = useLocalSearchParams();
     const { user, signOut } = useAuth();
-    const { items } = useCart();
     const [searchQuery, setSearchQuery] = useState(query ? String(query) : '');
     const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -47,18 +45,6 @@ export default function WebNavbar() {
                     <Pressable style={styles.actionButton} onPress={() => router.push('/create-listing')}>
                         <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
                         <Text style={styles.actionText}>İlan Ver</Text>
-                    </Pressable>
-
-                    <Pressable style={styles.actionButton} onPress={() => router.push('/cart')}>
-                        <View>
-                            <Ionicons name="cart-outline" size={24} color={Colors.text} />
-                            {items.length > 0 && (
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{items.length}</Text>
-                                </View>
-                            )}
-                        </View>
-                        <Text style={styles.actionText}>Sepetim</Text>
                     </Pressable>
 
                     {user ? (

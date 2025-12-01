@@ -5,8 +5,11 @@ export interface User {
     email: string;
     photoURL?: string;
     phone?: string;
-    role?: 'USER' | 'SELLER' | 'ADMIN';
+    role?: 'USER' | 'SELLER' | 'ADMIN' | 'BOTH';
     favorites?: string[];
+    bio?: string;
+    city?: string;
+    district?: string;
     createdAt?: any; // Firestore Timestamp
 }
 

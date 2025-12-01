@@ -9,14 +9,12 @@ import WebLayout from '../../components/web/WebLayout';
 import { db } from '../../config/firebase';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
 import { useLocation } from '../../context/LocationContext';
 
 export default function HomeScreenWeb() {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { selectedLocation, setSelectedLocation } = useLocation();
-    const { addToCart } = useCart();
     const { user } = useAuth();
 
     const [products, setProducts] = useState<any[]>([]);

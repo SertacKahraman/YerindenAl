@@ -4,12 +4,15 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useRef, useState } from 'react';
 import {
     Alert,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    TouchableWithoutFeedback,
     useWindowDimensions,
     View,
 } from 'react-native';
@@ -151,119 +154,134 @@ export default function AuthScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
-                <View style={[styles.content, isWeb && { maxWidth: 400, width: '100%', marginHorizontal: 'auto' }]}>
-                    <Pressable style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.primary} />
-                    </Pressable>
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <View style={[styles.content, isWeb && { maxWidth: 400, width: '100%', marginHorizontal: 'auto' }]}>
+                            <View style={styles.header}>
+                                <Pressable style={styles.backButton} onPress={() => router.back()}>
+                                    <Ionicons name="arrow-back" size={24} color={Colors.primary} />
+                                </Pressable>
+                            </View>
 
-                    <Text style={styles.title}>{isLogin ? 'Giriş Yap' : 'Kayıt Ol'}</Text>
+                            <View style={styles.formContainer}>
+                                <Text style={styles.title}>{isLogin ? 'Giriş Yap' : 'Kayıt Ol'}</Text>
 
-                    {!isLogin && (
-                        <>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Ad"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={capitalizeNoSpaceTr(firstName)}
-                                onChangeText={text => setFirstName(capitalizeNoSpaceTr(text))}
-                                autoCapitalize="none"
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Soyad"
-                                placeholderTextColor={Colors.textSecondary}
-                                value={capitalizeNoSpaceTr(lastName)}
-                                onChangeText={text => setLastName(capitalizeNoSpaceTr(text))}
-                                autoCapitalize="none"
-                            />
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#d1d5db',
-                                        borderRadius: 0,
-                                        marginBottom: 16,
-                                        letterSpacing: 2,
-                                        fontWeight: '400',
-                                        fontFamily: undefined,
-                                        fontSize: 18,
-                                        color: '#111',
-                                        backgroundColor: 'transparent',
-                                    },
-                                ]}
-                                placeholder="(5__) ___ __ __"
-                                placeholderTextColor="#b0b0b0"
-                                value={formatPhoneInput(phone)}
-                                onChangeText={text => {
-                                    let cleaned = text.replace(/[^0-9]/g, '');
-                                    if (cleaned.startsWith('90')) cleaned = cleaned.slice(2);
-                                    if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
-                                    setPhone(cleaned.slice(0, 10));
-                                }}
-                                onKeyPress={e => {
-                                    if (e.nativeEvent.key === 'Backspace') {
-                                        setPhone(prev => prev.slice(0, -1));
-                                    }
-                                }}
-                                keyboardType="phone-pad"
-                                maxLength={15}
-                            />
-                        </>
-                    )}
+                                {!isLogin && (
+                                    <>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Ad"
+                                            placeholderTextColor={Colors.textSecondary}
+                                            value={capitalizeNoSpaceTr(firstName)}
+                                            onChangeText={text => setFirstName(capitalizeNoSpaceTr(text))}
+                                            autoCapitalize="none"
+                                        />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Soyad"
+                                            placeholderTextColor={Colors.textSecondary}
+                                            value={capitalizeNoSpaceTr(lastName)}
+                                            onChangeText={text => setLastName(capitalizeNoSpaceTr(text))}
+                                            autoCapitalize="none"
+                                        />
+                                        <TextInput
+                                            style={[
+                                                styles.input,
+                                                {
+                                                    borderBottomWidth: 1,
+                                                    borderBottomColor: '#d1d5db',
+                                                    borderRadius: 0,
+                                                    marginBottom: 16,
+                                                    letterSpacing: 2,
+                                                    fontWeight: '400',
+                                                    fontFamily: undefined,
+                                                    fontSize: 18,
+                                                    color: '#111',
+                                                    backgroundColor: 'transparent',
+                                                },
+                                            ]}
+                                            placeholder="(5__) ___ __ __"
+                                            placeholderTextColor="#b0b0b0"
+                                            value={formatPhoneInput(phone)}
+                                            onChangeText={text => {
+                                                let cleaned = text.replace(/[^0-9]/g, '');
+                                                if (cleaned.startsWith('90')) cleaned = cleaned.slice(2);
+                                                if (cleaned.startsWith('0')) cleaned = cleaned.slice(1);
+                                                cleaned = cleaned.slice(0, 10);
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="E-posta"
-                        placeholderTextColor={Colors.textSecondary}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
+                                                // Detect deletion of formatting character
+                                                const formattedCurrent = formatPhoneInput(phone);
+                                                if (text.length < formattedCurrent.length && cleaned === phone) {
+                                                    setPhone(cleaned.slice(0, -1));
+                                                } else {
+                                                    setPhone(cleaned);
+                                                }
+                                            }}
+                                            keyboardType="phone-pad"
+                                            maxLength={15}
+                                        />
+                                    </>
+                                )}
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Şifre"
-                        placeholderTextColor={Colors.textSecondary}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="E-posta"
+                                    placeholderTextColor={Colors.textSecondary}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                />
 
-                    {errorMessage ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffeaea', borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#ffb3b3', justifyContent: 'center' }}>
-                            <Ionicons name="alert-circle" size={22} color="#d32f2f" style={{ marginRight: 8 }} />
-                            <Text style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: 15 }}>{errorMessage}</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Şifre"
+                                    placeholderTextColor={Colors.textSecondary}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                />
+
+                                {errorMessage ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffeaea', borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#ffb3b3', justifyContent: 'center' }}>
+                                        <Ionicons name="alert-circle" size={22} color="#d32f2f" style={{ marginRight: 8 }} />
+                                        <Text style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: 15 }}>{errorMessage}</Text>
+                                    </View>
+                                ) : null}
+
+                                <Pressable
+                                    style={({ pressed }) => [
+                                        styles.button,
+                                        pressed && styles.buttonPressed,
+                                        loading && styles.buttonDisabled
+                                    ]}
+                                    onPress={handleSubmit}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.buttonText}>
+                                        {loading ? 'İşleniyor...' : isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
+                                    </Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={styles.switchButton}
+                                    onPress={() => setIsLogin(!isLogin)}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.switchButtonText}>
+                                        {isLogin
+                                            ? 'Hesabınız yok mu? Kayıt olun'
+                                            : 'Zaten hesabınız var mı? Giriş yapın'}
+                                    </Text>
+                                </Pressable>
+                            </View>
                         </View>
-                    ) : null}
-
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.button,
-                            pressed && styles.buttonPressed,
-                            loading && styles.buttonDisabled
-                        ]}
-                        onPress={handleSubmit}
-                        disabled={loading}
-                    >
-                        <Text style={styles.buttonText}>
-                            {loading ? 'İşleniyor...' : isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
-                        </Text>
-                    </Pressable>
-
-                    <Pressable
-                        style={styles.switchButton}
-                        onPress={() => setIsLogin(!isLogin)}
-                        disabled={loading}
-                    >
-                        <Text style={styles.switchButtonText}>
-                            {isLogin
-                                ? 'Hesabınız yok mu? Kayıt olun'
-                                : 'Zaten hesabınız var mı? Giriş yapın'}
-                        </Text>
-                    </Pressable>
-                </View>
+                    </TouchableWithoutFeedback>
+                </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -276,14 +294,20 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 16,
-        justifyContent: 'center',
+    },
+    header: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
     },
     backButton: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
         padding: 8,
+        alignSelf: 'flex-start',
+        borderRadius: 8,
+    },
+    formContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 16,
     },
     title: {
         fontSize: 28,
@@ -328,4 +352,4 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontSize: 14,
     },
-}); 
+});

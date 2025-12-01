@@ -91,8 +91,8 @@ export default function ProfileScreen() {
     }, [user, showFavorites]);
 
     const menuItems = [
-        { icon: 'create-outline', text: 'Profili Düzenle', action: () => { } },
-        { icon: 'list-outline', text: 'Siparişlerim', action: () => { } },
+        { icon: 'create-outline', text: 'Profili Düzenle', action: () => router.push('/profile/edit') },
+        { icon: 'list-outline', text: 'İlanlarım', action: () => router.push('/profile/listings') },
         { icon: 'heart-outline', text: 'Favorilerim', action: () => router.push('./profile/favorites') },
         { icon: 'chatbubble-ellipses-outline', text: 'Mesajlar', action: () => router.push('/messages') },
         { icon: 'settings-outline', text: 'Ayarlar', action: () => { } },
@@ -108,7 +108,7 @@ export default function ProfileScreen() {
                 <Text style={styles.headerTitle}>Profil</Text>
             </View>
 
-            <ScrollView style={styles.content}>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 70 }}>
                 <View style={styles.profileInfo}>
                     <Pressable onPress={handlePickImage} style={styles.profileImageWrapper}>
                         {user?.photoURL ? (

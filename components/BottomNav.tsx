@@ -3,15 +3,13 @@ import { usePathname, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/Colors';
-import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function BottomNav() {
     const router = useRouter();
     const pathname = usePathname();
-    const { items } = useCart();
     const { bottom } = useSafeAreaInsets();
-
-    const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+    const { user } = useAuth();
 
     const isActive = (path: string) => pathname === path;
 
@@ -46,22 +44,21 @@ export default function BottomNav() {
 
                 <Pressable
                     style={styles.navItem}
-                    onPress={() => router.push('/cart')}
+                    onPress={() => {
+                        if (user) {
+                            router.push('/profile');
+                        } else {
+                            router.push('/auth');
+                        }
+                    }}
                 >
-                    <View style={styles.cartContainer}>
-                        <Ionicons
-                            name={isActive('/cart') ? "cart" : "cart-outline"}
-                            size={24}
-                            color={isActive('/cart') ? Colors.primary : Colors.textSecondary}
-                        />
-                        {itemCount > 0 && (
-                            <View style={styles.badge}>
-                                <Text style={styles.badgeText}>{itemCount}</Text>
-                            </View>
-                        )}
-                    </View>
-                    <Text style={[styles.navText, isActive('/cart') && styles.activeText]}>
-                        Sepet
+                    <Ionicons
+                        name={isActive('/profile') ? "person" : "person-outline"}
+                        size={24}
+                        color={isActive('/profile') ? Colors.primary : Colors.textSecondary}
+                    />
+                    <Text style={[styles.navText, isActive('/profile') && styles.activeText]}>
+                        Profil
                     </Text>
                 </Pressable>
             </View>
@@ -106,26 +103,6 @@ const styles = StyleSheet.create({
     },
     activeText: {
         color: Colors.primary,
-    },
-    cartContainer: {
-        position: 'relative',
-    },
-    badge: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-        backgroundColor: Colors.primary,
-        borderRadius: 10,
-        minWidth: 20,
-        height: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 4,
-    },
-    badgeText: {
-        color: Colors.white,
-        fontSize: 12,
-        fontWeight: 'bold',
     },
     addButton: {
         alignItems: 'center',

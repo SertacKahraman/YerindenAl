@@ -3,17 +3,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../config/firebase';
 
-interface User {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    name?: string;
-    phone?: string;
-    location?: string;
-    photoURL?: string;
-    joinDate?: string;
-}
+import { User } from '../types';
 
 interface AuthContextType {
     user: User | null;
@@ -39,13 +29,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (userSnap.exists()) {
                     setUser(userSnap.data() as User);
                 } else {
+                    // Split display name into first and last name if possible
+                    const displayName = firebaseUser.displayName || '';
+                    const parts = displayName.split(' ');
+                    const firstName = parts[0] || '';
+                    const lastName = parts.slice(1).join(' ') || '';
+
                     setUser({
                         id: firebaseUser.uid,
                         email: firebaseUser.email || '',
-                        name: firebaseUser.displayName || '',
+                        firstName: firstName,
+                        lastName: lastName,
                         photoURL: firebaseUser.photoURL || '',
-                        joinDate: firebaseUser.metadata.creationTime || ''
-                    });
+                        // joinDate is not in User type in types/index.ts, but createdAt is.
+                        // We should probably map it or ignore it if strict.
+                        // Let's assume User type has createdAt.
+                        createdAt: firebaseUser.metadata.creationTime || ''
+                    } as User);
                 }
             } else {
                 setUser(null);
@@ -73,14 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (auth.currentUser) {
                 await fbUpdateProfile(auth.currentUser, { displayName: `${firstName} ${lastName}` });
                 // Firestore'a kullanıcıyı ekle
-                await setDoc(doc(db, 'users', auth.currentUser.uid), {
+                const newUser: User = {
                     id: auth.currentUser.uid,
-                    email: auth.currentUser.email,
+                    email: auth.currentUser.email || '',
                     firstName,
                     lastName,
                     phone: phone || '',
-                    joinDate: new Date().toISOString()
-                });
+                    createdAt: new Date().toISOString(),
+                    role: 'USER' // Default role
+                };
+                await setDoc(doc(db, 'users', auth.currentUser.uid), newUser);
+                setUser(newUser);
             }
         } catch (error) {
             throw error;
@@ -103,9 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updateProfile = async (data: Partial<User>) => {
         if (auth.currentUser) {
             const profileUpdate: { displayName?: string; photoURL?: string } = {};
-            if (data.name) {
-                profileUpdate.displayName = data.name;
+
+            // Construct display name if firstName or lastName is updated
+            if (data.firstName || data.lastName) {
+                const currentFirst = data.firstName || user?.firstName || '';
+                const currentLast = data.lastName || user?.lastName || '';
+                profileUpdate.displayName = `${currentFirst} ${currentLast}`.trim();
             }
+
             if (data.photoURL) {
                 profileUpdate.photoURL = data.photoURL;
             }

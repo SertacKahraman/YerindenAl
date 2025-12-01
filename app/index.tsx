@@ -10,7 +10,6 @@ import { db } from '../config/firebase';
 import { Colors } from '../constants/Colors';
 import { cities } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
 import { useLocation } from '../context/LocationContext';
 import { useProducts } from '../hooks/useProducts';
 
@@ -23,7 +22,6 @@ export default function HomeScreen() {
     const numColumns = isWeb ? (width > 1200 ? 5 : width > 900 ? 4 : width > 600 ? 3 : 2) : 2;
     const gap = 12;
     const { selectedLocation, setSelectedLocation } = useLocation();
-    const { addToCart } = useCart();
     const { user, signOut } = useAuth();
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [showSearchModal, setShowSearchModal] = useState(false);
@@ -34,10 +32,6 @@ export default function HomeScreen() {
     const { products, loading, refreshProducts } = useProducts();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
-
-
-
-
 
     // Kullanıcı favorilerini çek
     useEffect(() => {
@@ -417,4 +411,4 @@ const styles = StyleSheet.create({
         color: Colors.primary,
         fontWeight: '600',
     },
-}); 
+});

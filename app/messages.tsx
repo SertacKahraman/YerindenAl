@@ -212,9 +212,21 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.border,
         backgroundColor: Colors.background,
+        justifyContent: 'center',
     },
-    backButton: { padding: 8, marginRight: 8 },
-    headerTitle: { fontSize: 22, fontWeight: 'bold', color: Colors.primary, textAlign: 'center', flex: 1 },
+    backButton: {
+        position: 'absolute',
+        left: 16,
+        zIndex: 1,
+        padding: 8,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: Colors.primary,
+        textAlign: 'center',
+        flex: 1,
+    },
     chatItem: {
         backgroundColor: Colors.white,
         borderRadius: 16,
